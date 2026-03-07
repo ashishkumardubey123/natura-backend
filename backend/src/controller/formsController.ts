@@ -5,12 +5,24 @@ import { Request, Response } from "express";
 
 export async function GeneralInquiry( req: Request, res: Response ) {
   const { Name, Email, Phone, Message } = req.body;
-  // Basic validation
-  if (!Name?.trim() ||  !Email?.trim() ||  !Phone?.trim() ) {
+
+  // 1. Ek array banate hain jo missing fields ko track karega
+  const missingFields = [];
+
+  if (!Name?.trim()) missingFields.push("Name");
+  if (!Email?.trim()) missingFields.push("Email");
+  if (!Phone?.trim()) missingFields.push("Phone");
+
+
+  if (missingFields.length > 0) {
     return res.status(400).json({
-      message: "something is missing in required"
+    
+      message: `Required fields missing: ${missingFields.join(", ")}`,
+      missing: missingFields // Ye array directly bata dega ki kya missing tha
     });
   }
+
+
 
   try {
 
@@ -18,7 +30,9 @@ export async function GeneralInquiry( req: Request, res: Response ) {
       "INSERT INTO general_inquiries (full_name, email, phone, message) VALUES (?, ?, ?, ?)",
       [ Name, Email, Phone, Message ]
     );
-    res.status( 200 ).json( { success: true, message: "General Inquiry submitted" } );
+    res.status( 200 ).json( {
+     
+        message: "General Inquiry submitted" } );
 
   }
   catch ( error:any ) {
@@ -31,11 +45,18 @@ export async function GeneralInquiry( req: Request, res: Response ) {
 export async function SupplierRegistration( req: Request, res: Response ) {
   const { Company, Name, Email, Phone, SupplyCategory, CompanyProfile } = req.body;
   
-  // Basic validation
-  if (!Name?.trim() || !Email?.trim() || !Phone?.trim() || !Company?.trim() || !CompanyProfile?.trim()) {
+  const missingFields = [];
+
+  if (!Company?.trim()) missingFields.push("Company");
+  if (!Name?.trim()) missingFields.push("Name");
+  if (!Email?.trim()) missingFields.push("Email");
+  if (!SupplyCategory?.trim()) missingFields.push("SupplyCategory");
+  if (!CompanyProfile?.trim()) missingFields.push("CompanyProfile");
+
+  if (missingFields.length > 0) {
     return res.status(400).json({
-    
-      message: "something is missing in required"
+      message: `Required fields missing: ${missingFields.join(", ")}`,
+      missing: missingFields
     });
   }
   
@@ -62,19 +83,21 @@ export async function SupplierRegistration( req: Request, res: Response ) {
 
 export async function ExportQuery( req: Request, res: Response ) {
  const { Name, Email, Phone, Company, Country, Products, Details } = req.body;
+ const missingFields = [];
 
-// Basic validation
-if (
-  !Name?.trim() ||
-  !Email?.trim() ||
-  !Phone?.trim() ||
-  !Company?.trim() ||
-  !Products?.trim()
-) {
-  return res.status(400).json({
-    message: "All required fields must be filled"
-  });
-}
+
+  if (!Name?.trim()) missingFields.push("Name");
+  if (!Email?.trim()) missingFields.push("Email");
+  if (!Company?.trim()) missingFields.push("Company");
+  if (!Country?.trim()) missingFields.push("Country");
+  if (!Products?.trim()) missingFields.push("Products");
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      message: `Required fields missing: ${missingFields.join(", ")}`,
+      missing: missingFields
+    });
+  }
 
   try {
 
@@ -100,10 +123,18 @@ if (
 export async function BusinessPartnership(req: Request, res: Response) {
   const { Name, Email, Phone, Company, Partnership, Details } = req.body;
 
-  // Basic validation
-   if (!Name?.trim() || !Email?.trim() || !Phone?.trim() || !Company?.trim() || !Details?.trim() || ! Partnership?.trim()) {
+  const missingFields = [];
+
+  if (!Name?.trim()) missingFields.push("Name");
+  if (!Email?.trim()) missingFields.push("Email");
+  if (!Company?.trim()) missingFields.push("Company");
+  if (!Partnership?.trim()) missingFields.push("Partnership");
+  if (!Details?.trim()) missingFields.push("Details");
+
+  if (missingFields.length > 0) {
     return res.status(400).json({
-      message: "something is missing in required"
+      message: `Required fields missing: ${missingFields.join(", ")}`,
+      missing: missingFields
     });
   }
 
