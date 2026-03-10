@@ -3,56 +3,86 @@ import { Request, Response } from "express";
 
 export async function GetformsData(req: Request, res: Response) {
   try {
-    // 1. Data fetch karo
     const [GeneralInquiry] = await db.query("SELECT * FROM general_inquiries");
     const [ExportQuery] = await db.query("SELECT * FROM export_queries");
     const [SupplierRegistration] = await db.query("SELECT * FROM supplier_registrations");
     const [BusinessPartnership] = await db.query("SELECT * FROM business_partners");
 
-    // 2. Ek helper function banate hain jo database ki row ko frontend ke format me map karega
-    const formatData = (rows: any[], typeName: string, tableName: string) => {
+    const getRowDate = (row: any) => row.created_at || row.updated_at || row.date || new Date();
+
+    const formatData = (
+      rows: any[],
+      typeName: string,
+      tableName: string,
+      mapRow: (row: any) => Record<string, string>
+    ) => {
       return rows.map((row) => ({
         id: row.id,
-        tableName: tableName, // Update/Delete karte time kaam aayega ki kis table ka id hai
-        date: row.created_at || row.date || new Date(), // Apne DB column ka naam yahan likhen (e.g., created_at)
+        tableName,
+        date: getRowDate(row),
         type: typeName,
-        status: row.status || 'new',
-        data: {
-          // Note: Apne MySQL database ke column names ko yahan map karein
-          firstName: row.first_name || row.firstName || '',
-          lastName: row.last_name || row.lastName || '',
-          contactPerson: row.contact_person || row.contactPerson || '',
-          email: row.email || '',
-          phone: row.phone || '',
-          company: row.company || '',
-          country: row.country || '',
-          partnershipType: row.partnership_type || row.partnershipType || '',
-          supplyCategory: row.supply_category || row.supplyCategory || '',
-          products: row.products || '',
-          message: row.message || ''
-        }
+        status: row.status || "new",
+        data: mapRow(row)
       }));
     };
 
-    // 3. Sabhi forms ko ek single array me combine karein
     let allForms = [
-      ...formatData(GeneralInquiry as any[], "General Inquiry", "general_inquiries"),
-      ...formatData(ExportQuery as any[], "Export Query", "export_queries"),
-      ...formatData(SupplierRegistration as any[], "Supplier Registration", "supplier_registrations"),
-      ...formatData(BusinessPartnership as any[], "Business Partnership", "business_partners")
+      ...formatData(
+        GeneralInquiry as any[],
+        "General Inquiry",
+        "general_inquiries",
+        (row) => ({
+          name: row.full_name || "",
+          email: row.email || "",
+          phone: row.phone || "",
+          message: row.message || ""
+        })
+      ),
+      ...formatData(
+        ExportQuery as any[],
+        "Export Query",
+        "export_queries",
+        (row) => ({
+          name: row.full_name || "",
+          email: row.email || "",
+          phone: row.phone || "",
+          company: row.company_name || "",
+          country: row.target_country || "",
+          products: row.products_of_interest || "",
+          details: row.additional_details || ""
+        })
+      ),
+      ...formatData(
+        SupplierRegistration as any[],
+        "Supplier Registration",
+        "supplier_registrations",
+        (row) => ({
+          company: row.company_name || "",
+          name: row.contact_person || "",
+          email: row.email || "",
+          phone: row.phone || "",
+          supplyCategory: row.supply_category || "",
+          companyProfile: row.company_profile || ""
+        })
+      ),
+      ...formatData(
+        BusinessPartnership as any[],
+        "Business Partnership",
+        "business_partners",
+        (row) => ({
+          name: row.full_name || "",
+          email: row.email || "",
+          phone: row.phone || "",
+          company: row.company_name || "",
+          partnership: row.partnership_type || "",
+          details: row.proposal_details || ""
+        })
+      )
     ];
 
-    // 4. Data ko Date ke hisaab se sort karein (oldest first, frontend isko reverse() kar raha hai)
     allForms.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    // 5. Array ko directly send karein, ya object ke andar array bhejein
-    // Agar aapka frontend axios use karke seedha `response.data` le raha hai, 
-    // toh aap seedha array bhej sakte hain:
-    return res.status(200).json(allForms); 
-    
-    // YA phir (agar API expect karti hai {data: [...] } format)
-    // return res.status(200).json({ data: allForms });
-
+    return res.status(200).json(allForms);
   } catch (ERROR) {
     console.error("Error fetching forms:", ERROR);
     return res.status(500).json({
