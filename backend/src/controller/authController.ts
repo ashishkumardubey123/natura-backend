@@ -23,19 +23,12 @@ export async function Register (req:Request, res:Response) {
              })
       }
 
-// Basic validation
-//   if (!Name?.trim() ||  !Email?.trim() ||  !Phone?.trim() || !Role?.trim() ||!Password?.trim()  ) {
-//     return res.status(400).json({
-      
-//       message: "something is missing in required"
-//     });
-// }
-
+     console.log(Role)
   
 
  const [isUserExist]:any = await db.query(
-      "SELECT * FROM  admins WHERE Email =? or Phone =? or Name =?",
-       [Email, Phone, Name]
+      "SELECT * FROM  admins WHERE Email =? or Phone =?",
+       [Email, Phone, ]
  )
      
   if(isUserExist.length  !== 0){
@@ -45,12 +38,8 @@ export async function Register (req:Request, res:Response) {
                   message: "Admin Email Already Exist"
             })
       }
-      if(isUserExist[0].Name === Name){
-            return res.status(409).json({
-                  message : "Admin Name is Already Exist"
-            })
-      }
-      if(isUserExist[0].Phone ===Phone){
+    
+       else if(isUserExist[0].Phone ===Phone){
             return res.status(409).json({
                   message: "Admin Phone Numebr Already Exist"
             })
@@ -58,20 +47,42 @@ export async function Register (req:Request, res:Response) {
 
 
   }
+      // agar role superadmin hai to check karo
+    if (Role === "SuperAdmin") {
+
+      const [rows]: any = await db.query(
+        "SELECT * FROM admins WHERE role = ?",
+        ["SuperAdmin"]
+      )
+
+      // agar pehle se superadmin exist karta hai
+      if (rows.length > 0) {
+        return res.status(400).json({
+          message: "SuperAdmin already exists"
+        })
+        }
+      }
+    
+   
+
 
  const hashPassword = await bcrypt.hash( Password , 10)
 
-
+const status = (Role === "Admin") ? "pending" : null;
 
   const [Admin]:any =  await db.query(
 
-      "INSERT INTO admins (Name, Email, Phone ,Role ,Password) VALUES (?,?,?,?,?) ",
-              [Name,Email, Phone, Role, hashPassword]
-                  
-  )
+     "INSERT INTO admins (Name, Email, Phone, Role, Password, status) VALUES (?, ?, ?, ?, ?, ?)",
+  [Name, Email, Phone, Role, hashPassword, status]
+);
+   const adminId =Admin.insertId
+
+
+
+
 const token = jwt.sign(
   {
-    id: Admin.insertId,
+    id: adminId,
     Email: Email
   },
   process.env.JWT_SECRET!,
@@ -91,7 +102,7 @@ const token = jwt.sign(
   message: "Admin registered successfully",
   token: token,
   admin: {
-    id: Admin.insertId,
+    id: adminId,
     Name,
     Email,
     Phone,
