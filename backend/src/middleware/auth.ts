@@ -2,6 +2,7 @@ import { Request, Response, NextFunction   } from "express";
 import jwt from "jsonwebtoken";
 import  cookie  from 'cookie-parser';
 import  dotenv   from "dotenv";
+import db from "../config/dbconnection";
 dotenv.config();
 
 // Middleware to check authentication
@@ -23,6 +24,21 @@ export async function Auth (req:Request,res: Response, next: NextFunction ) {
      try{
             decode = jwt.verify(token, process.env.JWT_SECRET!)
 
+            // Database se Role aur Status fetch karo
+        const [rows]: any = await db.query(
+            "SELECT Role, status FROM admins WHERE AdminID = ?", 
+            [decode.id]
+        );
+
+        if (rows.length === 0) return res.status(401).json({ message: "User not found" });
+
+        // User ki info 'req' object mein daal do taaki controller (GetformsData) ise use kar sake
+        (req as any).user = {
+            id: decode.id,
+            Role: rows[0].Role,
+            status: rows[0].status
+        };
+
      }catch(error){
          return res.status(401).json({
             message: "user is not authorized"
@@ -32,71 +48,3 @@ export async function Auth (req:Request,res: Response, next: NextFunction ) {
           next()      
      
 }
-
-
-// the Headers method for verifying token
-
-
-// const authenticateToken = async (req, res, next) => {
-//     const authorizationHeader = req.headers.authorization;
-
-//     if (!authorizationHeader) {
-//         return res.status(401).json({ success:false,message: 'Unauthorized - Missing token' });
-//     }
-
-//     // const token = authorizationHeader.slice(7);
-//     const token = authorizationHeader.split(" ")[1];
-
-//     // Verify and decode the token (you need to implement this function)
-    
-//     const user = await verifyAdminToken(token);
-
-//     if (!user) {
-//         return res.status(401).json({ success:false,message: 'Unauthorized - Invalid token' });
-//     }
-
-//     // Attach the user to the request for later use
-//     req.user = user;
-//     console.log(user)
-//     next();
-// };
-
-
-
-// const verifyAdminToken = require('./verifyAdminToken.js');
-
-
-// const verifyAdminToken = async (token) => {
-   
-//     try {
-//         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-//         console.log(decoded)
-//         // Check if the user exists in the database
-//         const query = 'SELECT * FROM userprofile WHERE UserId = ?';
-//         const params = [decoded.userId];
-
-//         return new Promise((resolve, reject) => {
-//             db.query(query, params, (error, results) => {
-//                 if (error) {
-//                     console.error('Error executing query:', error);
-//                     reject(error);
-//                     return;
-//                 }
-
-//                 if (!results || results.length === 0) {
-//                     console.error('User not found in the database');
-//                     resolve(null);
-//                     return;
-//                 }
-
-//                 const user = results[0]; // Assuming user data is in the first row
-//                 // The user object contains the user information
-//                 resolve(user);
-//             });
-//         });
-//     } catch (error) {
-//         console.error('Error verifying token:', error);
-//         return null;
-//     }
-// };
-

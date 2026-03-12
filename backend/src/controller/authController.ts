@@ -202,3 +202,83 @@ export async function Logout (req:Request, res:Response) {
      });
       
 }
+
+export async function GetAllAdmins(req: Request, res: Response) {
+  try {
+    const user = (req as any).user; // Auth middleware se user nikala
+
+    // 1. Security Check: Sirf Super Admin hi sabhi admins ki list dekh sakta hai
+    if (user.Role !== "SuperAdmin") {
+      return res.status(403).json({
+        message: "Access Denied: Only Super Admin can manage admin users",
+      });
+    }
+
+    // 2. Database se SABHI Admins fetch karo (SuperAdmin ko chhod kar)
+    // Humne 'status = pending' wali condition hata di hai taaki sab dikhein
+    const [allAdmins]: any = await db.query(
+      "SELECT AdminID, Name, Email, Phone, Role, status FROM admins WHERE Role = 'Admin' ORDER BY status DESC"
+    );
+
+    // 3. Response bhej do
+    return res.status(200).json({
+      success: true,
+      message: "All admins fetched successfully",
+      count: allAdmins.length,
+      data: allAdmins
+    });
+
+  } catch (error) {
+    console.error("Error fetching all admins:", error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+      error
+    });
+  }
+}
+
+export async function UpdateAdminStatus(req: Request, res: Response) {
+  try {
+    const user = (req as any).user;
+
+    // 1. Security Check
+    if (user.Role !== "SuperAdmin") {
+      return res.status(403).json({
+        message: "Access Denied: You are not authorized",
+      });
+    }
+
+    const { id } = req.params;
+
+    // 2. Pehle current status fetch karo
+    const [rows]: any = await db.query(
+      "SELECT status FROM admins WHERE AdminID = ?",
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    const currentStatus = rows[0].status;
+
+    // 3. Toggle Logic: Agar pending hai to live, agar live hai to pending
+    const newStatus = currentStatus === "live" ? "pending" : "live";
+
+    // 4. Database mein naya status update karo
+    await db.query(
+      "UPDATE admins SET status = ? WHERE AdminID = ?",
+      [newStatus, id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: `Admin status changed from ${currentStatus} to ${newStatus}`,
+      newStatus: newStatus // Frontend ko naya status bhej rahe hain
+    });
+
+  } catch (error) {
+    console.error("Error toggling admin status:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+}

@@ -1,8 +1,22 @@
 import db from "../config/dbconnection";
 import { Request, Response } from "express";
 
+
+
 export async function GetformsData(req: Request, res: Response) {
   try {
+    const user = (req as any).user; // Middleware se user data nikala (Role aur status)
+
+    // 1. Check kro: Agar Admin hai aur live nahi hai, toh yahin se rok do
+    if (user.Role === "Admin" && user.status !== "live") {
+      return res.status(200).json({
+        message: "status pending waiting for approvel",
+        isPending: true,
+        data: []
+      });
+    }
+
+    // 2. Agar SuperAdmin hai YA Admin 'live' hai, toh ye niche wala code chalega
     const [GeneralInquiry] = await db.query("SELECT * FROM general_inquiries");
     const [ExportQuery] = await db.query("SELECT * FROM export_queries");
     const [SupplierRegistration] = await db.query("SELECT * FROM supplier_registrations");
@@ -82,7 +96,9 @@ export async function GetformsData(req: Request, res: Response) {
 
     allForms.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+    // Final Response sabke liye (SuperAdmin aur Live Admin)
     return res.status(200).json(allForms);
+
   } catch (ERROR) {
     console.error("Error fetching forms:", ERROR);
     return res.status(500).json({
