@@ -1,31 +1,31 @@
-import { Request, Response, NextFunction   } from "express";
-import jwt from "jsonwebtoken";
-import  cookie  from 'cookie-parser';
-import  dotenv   from "dotenv";
-import db from "../config/dbconnection";
+const { Request, Response, NextFunction } = require("express");
+const jwt = require("jsonwebtoken");
+const cookie = require("cookie-parser");
+const dotenv = require("dotenv");
+const db = require("../config/dbconnection");
+
 dotenv.config();
 
 // Middleware to check authentication
 
-
 // cookie metod for varifying token
 
-export async function Auth (req:Request,res: Response, next: NextFunction ) {
+async function Auth(req, res, next) {
  
-      const token =  req.cookies.jwt_token
+      const token = req.cookies.jwt_token
 
-         if (!token) {
+      if (!token) {
         return res.status(401).json({
             message: "Admin not Logedin, Unauthorized access"
         })
-    }
+      }
 
-     let decode =null 
-     try{
-            decode = jwt.verify(token, process.env.JWT_SECRET!)
+      let decode = null
+      try{
+            decode = jwt.verify(token, process.env.JWT_SECRET)
 
             // Database se Role aur Status fetch karo
-        const [rows]: any = await db.query(
+        const [rows] = await db.query(
             "SELECT Role, status FROM admins WHERE AdminID = ?", 
             [decode.id]
         );
@@ -33,7 +33,7 @@ export async function Auth (req:Request,res: Response, next: NextFunction ) {
         if (rows.length === 0) return res.status(401).json({ message: "User not found" });
 
         // User ki info 'req' object mein daal do taaki controller (GetformsData) ise use kar sake
-        (req as any).user = {
+        req.user = {
             id: decode.id,
             Role: rows[0].Role,
             status: rows[0].status
@@ -45,6 +45,7 @@ export async function Auth (req:Request,res: Response, next: NextFunction ) {
          })
      }
 
-          next()      
-     
+      next()      
 }
+
+module.exports = { Auth };
