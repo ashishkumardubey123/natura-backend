@@ -1,11 +1,8 @@
-import db from "../config/dbconnection";
-import { Request, Response } from "express";
+const db = require("../config/dbconnection");
 
-
-
-export async function GetformsData(req: Request, res: Response) {
+async function GetformsData(req, res) {
   try {
-    const user = (req as any).user; // Middleware se user data nikala (Role aur status)
+    const user = req.user; // Middleware se user data nikala (Role aur status)
 
     // 1. Check kro: Agar Admin hai aur live nahi hai, toh yahin se rok do
     if (user.Role === "Admin" && user.status !== "live") {
@@ -22,13 +19,13 @@ export async function GetformsData(req: Request, res: Response) {
     const [SupplierRegistration] = await db.query("SELECT * FROM supplier_registrations");
     const [BusinessPartnership] = await db.query("SELECT * FROM business_partners");
 
-    const getRowDate = (row: any) => row.created_at || row.updated_at || row.date || new Date();
+    const getRowDate = (row) => row.created_at || row.updated_at || row.date || new Date();
 
     const formatData = (
-      rows: any[],
-      typeName: string,
-      tableName: string,
-      mapRow: (row: any) => Record<string, string>
+      rows,
+      typeName,
+      tableName,
+      mapRow
     ) => {
       return rows.map((row) => ({
         id: row.id,
@@ -42,7 +39,7 @@ export async function GetformsData(req: Request, res: Response) {
 
     let allForms = [
       ...formatData(
-        GeneralInquiry as any[],
+        GeneralInquiry,
         "General Inquiry",
         "general_inquiries",
         (row) => ({
@@ -53,7 +50,7 @@ export async function GetformsData(req: Request, res: Response) {
         })
       ),
       ...formatData(
-        ExportQuery as any[],
+        ExportQuery,
         "Export Query",
         "export_queries",
         (row) => ({
@@ -67,7 +64,7 @@ export async function GetformsData(req: Request, res: Response) {
         })
       ),
       ...formatData(
-        SupplierRegistration as any[],
+        SupplierRegistration,
         "Supplier Registration",
         "supplier_registrations",
         (row) => ({
@@ -80,7 +77,7 @@ export async function GetformsData(req: Request, res: Response) {
         })
       ),
       ...formatData(
-        BusinessPartnership as any[],
+        BusinessPartnership,
         "Business Partnership",
         "business_partners",
         (row) => ({
@@ -96,7 +93,6 @@ export async function GetformsData(req: Request, res: Response) {
 
     allForms.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    // Final Response sabke liye (SuperAdmin aur Live Admin)
     return res.status(200).json(allForms);
 
   } catch (ERROR) {
@@ -110,12 +106,11 @@ export async function GetformsData(req: Request, res: Response) {
 
 
 // Naya function Status update karne ke liye
-export async function UpdateFormStatus(req: Request, res: Response) {
+async function UpdateFormStatus(req, res) {
   try {
-    const { id } = req.params; // URL se ID aayegi
-    const { status, tableName } = req.body; // Frontend se Status aur Table ka naam aayega
+    const { id } = req.params;
+    const { status, tableName } = req.body;
 
-    // Security check: SQL Injection se bachne ke liye sirf in tables ko allow karein
     const allowedTables = [
       'general_inquiries', 
       'export_queries', 
@@ -130,7 +125,6 @@ export async function UpdateFormStatus(req: Request, res: Response) {
       });
     }
 
-    // Dynamic SQL Query chalayein (?? use hota hai table/column names ke liye, aur ? values ke liye)
     const [result] = await db.query(
       `UPDATE ?? SET status = ? WHERE id = ?`,
       [tableName, status, id]
@@ -150,3 +144,8 @@ export async function UpdateFormStatus(req: Request, res: Response) {
     });
   }
 }
+
+module.exports = {
+  GetformsData,
+  UpdateFormStatus
+};

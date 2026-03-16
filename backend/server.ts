@@ -1,10 +1,10 @@
-import app from "./src/app.ts"
-import dotenv from "dotenv";
+const app = require("./src/app");
+const dotenv = require("dotenv");
 
 dotenv.config();
 
-const port =  process.env.PORT
+const port = process.env.PORT;
 
-app.listen( port, () => {
-      console.log( `app is running on ${port} ` )
-} )
+app.listen(port, () => {
+  console.log(`app is running on ${port} `);
+});

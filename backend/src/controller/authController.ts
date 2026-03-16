@@ -1,17 +1,13 @@
-import db from "../config/dbconnection";
-import env from "dotenv";
+const db = require("../config/dbconnection");
+const env = require("dotenv");
 
-import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
-import cookie from "cookie-parser";
-import { decode } from "./../../node_modules/@types/jsonwebtoken/index.d";
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+const cookie = require("cookie-parser");
 
 env.config();
 
-const isProduction = process.env.NODE_ENV === "production";
-
-export async function Register(req: Request, res: Response) {
+async function Register(req, res) {
   const { Name, Email, Phone, Role, Password } = req.body;
 
   const fields = [Name, Email, Phone, Role, Password];
@@ -24,7 +20,7 @@ export async function Register(req: Request, res: Response) {
 
   console.log(Role);
 
-  const [isUserExist]: any = await db.query(
+  const [isUserExist] = await db.query(
     "SELECT * FROM  admins WHERE Email =? or Phone =?",
     [Email, Phone],
   );
@@ -40,13 +36,12 @@ export async function Register(req: Request, res: Response) {
       });
     }
   }
-  // agar role superadmin hai to check karo
+
   if (Role === "SuperAdmin") {
-    const [rows]: any = await db.query("SELECT * FROM admins WHERE role = ?", [
+    const [rows] = await db.query("SELECT * FROM admins WHERE role = ?", [
       "SuperAdmin",
     ]);
 
-    // agar pehle se superadmin exist karta hai
     if (rows.length > 0) {
       return res.status(400).json({
         message: "SuperAdmin already exists",
@@ -58,10 +53,11 @@ export async function Register(req: Request, res: Response) {
 
   const status = Role === "Admin" ? "pending" : null;
 
-  const [Admin]: any = await db.query(
+  const [Admin] = await db.query(
     "INSERT INTO admins (Name, Email, Phone, Role, Password, status) VALUES (?, ?, ?, ?, ?, ?)",
     [Name, Email, Phone, Role, hashPassword, status],
   );
+
   const adminId = Admin.insertId;
 
   const token = jwt.sign(
@@ -69,15 +65,14 @@ export async function Register(req: Request, res: Response) {
       id: adminId,
       Email: Email,
     },
-    process.env.JWT_SECRET!,
+    process.env.JWT_SECRET,
     {
       expiresIn: "3d",
     },
   );
+
   res.cookie("jwt_token", token, {
     httpOnly: true,
-    secure: isProduction, // Localhost pe HTTP hota hai (false), Production pe HTTPS hota hai (true)
-    sameSite: isProduction ? "none" : "lax", // Production me agar frontend/backend alag domain pe hain toh 'none' chahiye
     maxAge: 24 * 60 * 60 * 1000,
   });
 
@@ -94,7 +89,7 @@ export async function Register(req: Request, res: Response) {
   });
 }
 
-export async function Login(req: Request, res: Response) {
+async function Login(req, res) {
   const { Email, Password } = req.body;
 
   const fields = [Email, Password];
@@ -105,10 +100,9 @@ export async function Login(req: Request, res: Response) {
     });
   }
 
-  const [admin]: any = await db.query(
-    "SELECT * FROM  admins WHERE Email =?  ",
-    [Email],
-  );
+  const [admin] = await db.query("SELECT * FROM  admins WHERE Email =?  ", [
+    Email,
+  ]);
 
   if (admin.length == 0) {
     return res.status(401).json({
@@ -137,16 +131,14 @@ export async function Login(req: Request, res: Response) {
       id: admin[0].AdminID,
       Email: Email,
     },
-    process.env.JWT_SECRET!,
+    process.env.JWT_SECRET,
     {
       expiresIn: "1d",
     },
   );
+
   res.cookie("jwt_token", token, {
     httpOnly: true,
-    secure: isProduction, // Localhost pe HTTP hota hai (false), Production pe HTTPS hota hai (true)
-    sameSite: isProduction ? "none" : "lax", // Production me agar frontend/backend alag domain pe hain toh 'none' chahiye
-    maxAge: 24 * 60 * 60 * 1000,
   });
 
   res.status(200).json({
@@ -162,31 +154,27 @@ export async function Login(req: Request, res: Response) {
   });
 }
 
-export async function Logout(req: Request, res: Response) {
+async function Logout(req, res) {
   res.clearCookie("jwt_token");
   res.status(200).json({
     message: "Admin logged out successfully",
   });
 }
 
-export async function GetAllAdmins(req: Request, res: Response) {
+async function GetAllAdmins(req, res) {
   try {
-    const user = (req as any).user; // Auth middleware se user nikala
+    const user = req.user;
 
-    // 1. Security Check: Sirf Super Admin hi sabhi admins ki list dekh sakta hai
     if (user.Role !== "SuperAdmin") {
       return res.status(403).json({
         message: "Access Denied: Only Super Admin can manage admin users",
       });
     }
 
-    // 2. Database se SABHI Admins fetch karo (SuperAdmin ko chhod kar)
-    // Humne 'status = pending' wali condition hata di hai taaki sab dikhein
-    const [allAdmins]: any = await db.query(
+    const [allAdmins] = await db.query(
       "SELECT AdminID, Name, Email, Phone, Role, status FROM admins WHERE Role = 'Admin' ORDER BY status DESC",
     );
 
-    // 3. Response bhej do
     return res.status(200).json({
       success: true,
       message: "All admins fetched successfully",
@@ -195,6 +183,7 @@ export async function GetAllAdmins(req: Request, res: Response) {
     });
   } catch (error) {
     console.error("Error fetching all admins:", error);
+
     return res.status(500).json({
       message: "Internal Server Error",
       error,
@@ -202,11 +191,10 @@ export async function GetAllAdmins(req: Request, res: Response) {
   }
 }
 
-export async function UpdateAdminStatus(req: Request, res: Response) {
+async function UpdateAdminStatus(req, res) {
   try {
-    const user = (req as any).user;
+    const user = req.user;
 
-    // 1. Security Check
     if (user.Role !== "SuperAdmin") {
       return res.status(403).json({
         message: "Access Denied: You are not authorized",
@@ -215,8 +203,7 @@ export async function UpdateAdminStatus(req: Request, res: Response) {
 
     const { id } = req.params;
 
-    // 2. Pehle current status fetch karo
-    const [rows]: any = await db.query(
+    const [rows] = await db.query(
       "SELECT status FROM admins WHERE AdminID = ?",
       [id],
     );
@@ -227,10 +214,8 @@ export async function UpdateAdminStatus(req: Request, res: Response) {
 
     const currentStatus = rows[0].status;
 
-    // 3. Toggle Logic: Agar pending hai to live, agar live hai to pending
     const newStatus = currentStatus === "live" ? "pending" : "live";
 
-    // 4. Database mein naya status update karo
     await db.query("UPDATE admins SET status = ? WHERE AdminID = ?", [
       newStatus,
       id,
@@ -239,10 +224,19 @@ export async function UpdateAdminStatus(req: Request, res: Response) {
     return res.status(200).json({
       success: true,
       message: `Admin status changed from ${currentStatus} to ${newStatus}`,
-      newStatus: newStatus, // Frontend ko naya status bhej rahe hain
+      newStatus: newStatus,
     });
   } catch (error) {
     console.error("Error toggling admin status:", error);
+
     return res.status(500).json({ message: "Internal Server Error" });
   }
 }
+
+module.exports = {
+  Register,
+  Login,
+  Logout,
+  GetAllAdmins,
+  UpdateAdminStatus,
+};
