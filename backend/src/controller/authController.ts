@@ -1,3 +1,4 @@
+export {};
 const db = require("../config/dbconnection");
 const env = require("dotenv");
 
@@ -8,6 +9,7 @@ const cookie = require("cookie-parser");
 env.config();
 
 async function Register(req, res) {
+  try {
     const {Name, Email, Phone, Role, Password } = req.body
      
     const fields = [ Name, Email, Phone, Role, Password ];
@@ -45,7 +47,7 @@ async function Register(req, res) {
     if (Role === "SuperAdmin") {
 
       const [rows] = await db.query(
-        "SELECT * FROM admins WHERE role = ?",
+        "SELECT * FROM admins WHERE Role = ?",
         ["SuperAdmin"]
       )
 
@@ -94,6 +96,14 @@ res.status(201).json({
     Role
   }
 });
+
+  } catch (error) {
+    console.error("Error in Register:", error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message
+    });
+  }
 }
 
 async function Login(req, res) {

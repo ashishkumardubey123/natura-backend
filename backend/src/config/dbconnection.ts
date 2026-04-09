@@ -1,3 +1,4 @@
+export {};
 const mysql = require("mysql2/promise");
 const dotenv = require("dotenv");
 
@@ -11,4 +12,3 @@ const db = mysql.createPool({
 });
 
 module.exports = db;
-module.exports.db = db;

@@ -1,3 +1,5 @@
+
+export {};
 const db = require("../config/dbconnection");
 
 async function GetformsData(req, res) {

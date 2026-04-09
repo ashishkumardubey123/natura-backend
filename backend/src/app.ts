@@ -1,30 +1,47 @@
+"use strict";
+export {};
 const express = require("express");
 const dotenv = require("dotenv");
-const router = require("./router/formsRoute");
-const authRouter = require("./router/authrouter");
+const formRoutes = require("./router/formsRoute");
+const authRoutes = require("./router/authrouter");
 const cookieParser = require("cookie-parser");
-const CORS = require("cors");
-
+const productrouter = require("./router/productRouter")
+const cors = require("cors");
+const path = require("path");  // ← add karo
+const shipment = require("./router/shipments")
 dotenv.config();
+
 
 const app = express();
 
 // Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(CORS({
-    origin: 'http://localhost:3000',
+app.use(cors({
+    origin: "http://localhost:3000",
     credentials: true,
 }));
 
-app.use(express.urlencoded({ extended: true }));
+// Routes
+app.use("/api/admin", authRoutes);
+app.use("/api/form", formRoutes);
+app.use("/api/product", productrouter);
+app.use("/api/shipments", shipment);
 
-// Test Route
-app.get("/", (req, res) => {
-  res.send("API is running 🚀");
+ app.get("/" ,(req:any,res:any)=>{
+    res.send("server is running 🚀 ")
+ })
+
+// ✅ Backend static uploads folder
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
+// ✅ Frontend static files
+app.use(express.static(path.join(__dirname, "../out")));
+
+// ✅ Catch-all
+app.get("/{*path}", function(req: any, res: any) {
+  res.sendFile(path.join(__dirname, "../out", "index.html"));
 });
-
-app.use("/api/admin", authRouter);
-app.use("/api/form", router);
 
 module.exports = app;

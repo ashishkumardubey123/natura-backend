@@ -1,3 +1,4 @@
+export {};
 const db = require("../config/dbconnection");
 const { sendMail } = require("../Services/sendingEmail");
 
