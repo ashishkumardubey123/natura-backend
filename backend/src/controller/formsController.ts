@@ -1,7 +1,7 @@
 export {};
 const db = require("../config/dbconnection");
-const { sendMail } = require("../Services/sendingEmail");
-
+// Purana import hata kar naya wala lagayein (jo aapne mailer.ts mein banaya hai)
+const { sendAdminNotification } = require("../Services/sendingEmail");
 async function getAdminEmails() {
  try {
     const [admins] = await db.query(
@@ -39,7 +39,7 @@ async function GeneralInquiry(req, res) {
 
     const adminEmails = await getAdminEmails();
 
-    sendMail(
+    sendAdminNotification(
       'Natura Alert: New General Inquiry',
       `<div style="font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px;">
         <h2 style="color: #2A5C32;">New General Inquiry Received</h2>
@@ -91,7 +91,7 @@ async function SupplierRegistration(req, res) {
       [ Company, Name, Email, Phone, SupplyCategory, CompanyProfile ]
     );
 
-    sendMail(
+    sendAdminNotification(
       'Natura Alert: New Supplier Registration',
       `<div style="font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px;">
         <h2 style="color: #2A5C32;">New Supplier Request</h2>
@@ -146,7 +146,7 @@ async function ExportQuery(req, res) {
     [ Name, Email, Phone, Company, Country, Products, Details ]
   );
 
-  sendMail(
+  sendAdminNotification(
       'Natura Alert: New Export Query',
       `<div style="font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px;">
         <h2 style="color: #2A5C32;">New Export Query Received</h2>
@@ -204,7 +204,7 @@ async function BusinessPartnership(req, res) {
   [Name, Email, Phone, Company, Partnership, Details]
  );
 
- sendMail(
+ sendAdminNotification(
       'Natura Alert: New Business Partnership Proposal',
       `<div style="font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px;">
         <h2 style="color: #2A5C32;">New Partnership Proposal</h2>
