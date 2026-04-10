@@ -23,22 +23,28 @@ const Productshipment = async (req: Request & { file?: any }, res: Response) => 
       return res.status(400).json({ error: "Excel sheet is empty" });
     }
 
-    // 3. Map the Excel Data to the Database Columns
+    // 3. Map the Excel Data to the Database Columns (Added "Exporter Name")
     const values = data.map((row: any) => [
-      row["Indian Port"] || null, row["Shipment Mode"] || null, row["SB Date"] || null,
-      row["Product Description"] || null, row["Country of Destination"] || null,
-      row["Port of Destination"] || null, row["Quantity"] || row["Qunatity"] || null, 
+      row["Exporter Name"] || null,         // <--- NAYA COLUMN YAHAN ADD KIYA HAI
+      row["Indian Port"] || null, 
+      row["Shipment Mode"] || null, 
+      row["SB Date"] || null,
+      row["Product Description"] || null, 
+      row["Country of Destination"] || null,
+      row["Port of Destination"] || null, 
+      row["Quantity"] || row["Qunatity"] || null, 
       row["Unit"] || null
     ]);
 
-    // 4. Create the SQL Query Matching `export_shipments` actual schema
-    const sql = `INSERT INTO export_shipments (indian_port, shipment_mode, sb_date, product_description, country_of_destination, port_of_destination, quantity, unit) VALUES ?`;
+    // 4. Create the SQL Query Matching `export_shipments` actual schema (Added exporter_name)
+    const sql = `INSERT INTO export_shipments (exporter_name, indian_port, shipment_mode, sb_date, product_description, country_of_destination, port_of_destination, quantity, unit) VALUES ?`;
     
     // Chunking the payload to prevent MySQL "packet too large" limit from crashing
     // MySQL default max_allowed_packet is typically 1MB or 4MB. 
     const CHUNK_SIZE = 500; 
     for (let i = 0; i < values.length; i += CHUNK_SIZE) {
       const chunk = values.slice(i, i + CHUNK_SIZE);
+      // Ensure db.query is passing the chunk correctly for bulk insert
       await db.query(sql, [chunk]);
     }
 

@@ -1,14 +1,14 @@
 export {};
 const db = require("../config/dbconnection");
 const env = require("dotenv");
-
+const { Request, Response } = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const cookie = require("cookie-parser");
 
 env.config();
 
-async function Register(req: any, res: any) {
+async function Register(req: Request, res: Response) {
   try {
     const { Name, Email, Phone, Role, Password } = req.body;
 

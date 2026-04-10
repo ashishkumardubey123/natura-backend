@@ -9,6 +9,7 @@ const productrouter = require("./router/productRouter")
 const cors = require("cors");
 const path = require("path");  // ← add karo
 const shipment = require("./router/shipments")
+const countryRouter = require("./router/Country")
 dotenv.config();
 
 
@@ -30,6 +31,7 @@ app.use("/api/admin", authRoutes);
 app.use("/api/form", formRoutes);
 app.use("/api/product", productrouter);
 app.use("/api/shipments", shipment);
+app.use("/api/contry", countryRouter)
 
  app.get("/" ,(req:any,res:any)=>{
     res.send("server is running 🚀 ")
