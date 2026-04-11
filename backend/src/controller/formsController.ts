@@ -2,12 +2,50 @@ export {};
 const db = require("../config/dbconnection");
 // Purana import hata kar naya wala lagayein (jo aapne mailer.ts mein banaya hai)
 const { sendAdminNotification } = require("../Services/sendingEmail");
+
+// Helper function:  email template generate karne ke liye
+const generateEmailTemplate = (title, detailsHtml) => {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
+      <div style="background-color: #2A5C32; color: #ffffff; padding: 20px; text-align: center;">
+        <h2 style="margin: 0; letter-spacing: 1px;">Natura Admin Alert</h2>
+      </div>
+      <div style="padding: 25px; background-color: #fafafa;">
+        <p style="font-size: 16px; color: #333;">Hello Admin,</p>
+        <p style="font-size: 15px; color: #555;">A new <strong>${title}</strong> has been submitted. Here are the details:</p>
+        
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; border-radius: 5px; overflow: hidden; border: 1px solid #eee;">
+          ${detailsHtml}
+        </table>
+
+        <div style="text-align: center; margin-top: 35px; margin-bottom: 10px;">
+          <a href="${process.env.BASE_URL || "http://localhost:5000"}/admin" style="background-color: #2A5C32; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 15px;">View in Dashboard</a>
+        </div>
+      </div>
+      <div style="background-color: #f1f1f1; color: #888; text-align: center; padding: 12px; font-size: 12px;">
+        &copy; ${new Date().getFullYear()} Natura Alerts. All rights reserved.
+      </div>
+    </div>
+  `;
+};
+
+// Helper function: Table row generate karne ke liye
+const tableRow = (label, value) => {
+  return `
+    <tr>
+      <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold; width: 35%; color: #444;">${label}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #eee; color: #333;">${value || 'N/A'}</td>
+    </tr>
+  `;
+};
+
+
 async function getAdminEmails() {
  try {
     const [admins] = await db.query(
       "SELECT Email FROM admins WHERE Role = 'SuperAdmin' OR status = 'live'"
     );
-    return admins.map((a) => a.Email);
+    return admins.map((adminEmails) => adminEmails.Email);
   } catch (error) {
     console.error("Error fetching admin emails:", error);
     return [];
@@ -39,20 +77,18 @@ async function GeneralInquiry(req, res) {
 
     const adminEmails = await getAdminEmails();
 
-    sendAdminNotification(
-      'Natura Alert: New General Inquiry',
-      `<div style="font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px;">
-        <h2 style="color: #2A5C32;">New General Inquiry Received</h2>
-        <p><strong>Name:</strong> ${Name}</p>
-        <p><strong>Email:</strong> ${Email}</p>
-        <p><strong>Phone:</strong> ${Phone || 'N/A'}</p>
-        <p><strong>Message:</strong> ${Message || 'No message'}</p>
-        <hr />
-        <p style="font-size: 12px; color: #777;">View full details on the Natura Admin Console.</p>
-        <hr/>
-        <a href="http://localhost:3000/admin" style="background:#2A5C32; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Open Dashboard</a>
-      </div>`
-    );
+   const detailsHtml = 
+      tableRow("Full Name", Name) + 
+      tableRow("Email Address", Email) + 
+      tableRow("Phone Number", Phone) + 
+      tableRow("Message", Message);
+      
+    const emailBody = generateEmailTemplate('General Inquiry', detailsHtml);
+
+    // Send email with dynamic adminEmails
+    if (adminEmails.length > 0) {
+      sendAdminNotification(adminEmails, 'Natura Alert: New General Inquiry', emailBody);
+    }
 
     res.status(200).json({
         message: "General Inquiry submitted"
@@ -91,20 +127,20 @@ async function SupplierRegistration(req, res) {
       [ Company, Name, Email, Phone, SupplyCategory, CompanyProfile ]
     );
 
-    sendAdminNotification(
-      'Natura Alert: New Supplier Registration',
-      `<div style="font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px;">
-        <h2 style="color: #2A5C32;">New Supplier Request</h2>
-        <p><strong>Company:</strong> ${Company}</p>
-        <p><strong>Contact Person:</strong> ${Name}</p>
-        <p><strong>Category:</strong> ${SupplyCategory}</p>
-        <p><strong>Email:</strong> ${Email}</p>
-        <hr />
-        <p style="font-size: 12px; color: #777;">Please log in to approve or review the supplier profile.</p>
-        <hr/>
-        <a href="http://localhost:3000/admin" style="background:#2A5C32; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Open Dashboard</a>
-      </div>`
-    );
+   const adminEmails = await getAdminEmails();
+
+    const detailsHtml = 
+      tableRow("Company Name", Company) + 
+      tableRow("Contact Person", Name) + 
+      tableRow("Email", Email) + 
+      tableRow("Phone", Phone) + 
+      tableRow("Supply Category", SupplyCategory);
+
+    const emailBody = generateEmailTemplate('Supplier Registration', detailsHtml);
+
+    if (adminEmails.length > 0) {
+      sendAdminNotification(adminEmails, 'Natura Alert: New Supplier Registration', emailBody);
+    }
 
     return res.status(200).json({
       message: "Supplier registration submitted successfully"
@@ -146,20 +182,20 @@ async function ExportQuery(req, res) {
     [ Name, Email, Phone, Company, Country, Products, Details ]
   );
 
-  sendAdminNotification(
-      'Natura Alert: New Export Query',
-      `<div style="font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px;">
-        <h2 style="color: #2A5C32;">New Export Query Received</h2>
-        <p><strong>Client:</strong> ${Name}</p>
-        <p><strong>Company:</strong> ${Company}</p>
-        <p><strong>Target Country:</strong> ${Country}</p>
-        <p><strong>Products:</strong> ${Products}</p>
-        <hr />
-        <p style="font-size: 12px; color: #777;">Check the Export Management section in your dashboard.</p>
-        <hr/>
-        <a href="http://localhost:3000/admin" style="background:#2A5C32; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Open Dashboard</a>
-      </div>`
-    );
+  const adminEmails = await getAdminEmails();
+
+    const detailsHtml = 
+      tableRow("Client Name", Name) + 
+      tableRow("Email", Email) + 
+      tableRow("Company", Company) + 
+      tableRow("Target Country", Country) + 
+      tableRow("Products", Products);
+
+    const emailBody = generateEmailTemplate('Export Query', detailsHtml);
+
+    if (adminEmails.length > 0) {
+      sendAdminNotification(adminEmails, 'Natura Alert: New Export Query', emailBody);
+    }
 
   return res.status(200).json({
     message: "Supplier registration submitted successfully"
@@ -204,19 +240,20 @@ async function BusinessPartnership(req, res) {
   [Name, Email, Phone, Company, Partnership, Details]
  );
 
- sendAdminNotification(
-      'Natura Alert: New Business Partnership Proposal',
-      `<div style="font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px;">
-        <h2 style="color: #2A5C32;">New Partnership Proposal</h2>
-        <p><strong>From:</strong> ${Name}</p>
-        <p><strong>Company:</strong> ${Company}</p>
-        <p><strong>Partnership Type:</strong> ${Partnership}</p>
-        <hr />
-        <p><strong>Proposal Snippet:</strong> ${Details.substring(0, 100)}...</p>
-        <hr/>
-        <a href="http://localhost:3000/admin" style="background:#2A5C32; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Open Dashboard</a>
-      </div>`
-    );
+ const adminEmails = await getAdminEmails();
+
+    const detailsHtml = 
+      tableRow("From", Name) + 
+      tableRow("Email", Email) + 
+      tableRow("Company", Company) + 
+      tableRow("Partnership Type", Partnership) + 
+      tableRow("Proposal Details", Details.substring(0, 100) + '...');
+
+    const emailBody = generateEmailTemplate('Business Partnership Proposal', detailsHtml);
+
+    if (adminEmails.length > 0) {
+      sendAdminNotification(adminEmails, 'Natura Alert: New Business Partnership Proposal', emailBody);
+    }
 
  return res.status(200).json({
    message: "Business partnership request submitted successfully"

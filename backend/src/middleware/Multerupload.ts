@@ -13,9 +13,9 @@ const storage = multer.diskStorage({
     cb(null, uploadDir); 
   },
   filename: function (req: any, file: any, cb: any) {
-    // Generate a unique identifier like fieldname-1610486... .ext
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    // Get original name without extension and remove special characters/spaces
+    const originalName = path.parse(file.originalname).name.replace(/[^a-zA-Z0-9]/g, '-');
+    cb(null, originalName + path.extname(file.originalname));
   }
 });
 

@@ -1,7 +1,6 @@
+// sendingEmail.js
 import nodemailer from 'nodemailer';
 
-// --- GMAIL SETUP ---
-// Ek hi baar transporter banayenge taaki fast kaam kare
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -10,37 +9,22 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// 1. Ye function admin ko (ya kisi fixed email ko) alerts bhejne ke liye hai
-export const sendAdminNotification = async (subject: string, html: string) => {
+// Yahan 'emails' parameter add kiya gaya hai
+export const sendAdminNotification = async (emails, subject, html) => {
   try {
+    // Agar array hai to comma-separated string bana do
+    const toEmails = Array.isArray(emails) ? emails.join(',') : emails;
+
     const mailOptions = {
       from: `"Natura Alerts" <${process.env.EMAILSENDER}>`,
-      // Yahan wo email daalein jispar saare form submissions receive karne hain
-      to: 'hegscjab.mp.gov.in@gmail.com', 
+      to: toEmails, // Ab saare admins ko jayega
       subject: subject,
       html: html,
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`Admin Notification Sent via Gmail! Subject: ${subject}`);
+    console.log(`Admin Notification Sent to: ${toEmails}`);
   } catch (err) {
     console.error("Gmail Admin Notification Error:", err);
-  }
-};
-
-// 2. Ye aapka OTP bhejne wala function hai
-export const sendOtpEmailPin = async (email: string, otp: string | number) => {
-  try {
-    const mailOptions = {
-      from: `"Natura Alerts" <${process.env.EMAILSENDER}>`,
-      to: email,
-      subject: "Your OTP for Changing PIN",
-      text: `Your OTP for changing your PIN is: ${otp}`,
-    };
-
-    await transporter.sendMail(mailOptions);
-    console.log(`OTP sent successfully to ${email}`);
-  } catch (error) {
-    console.error("OTP Email Error:", error);
   }
 };

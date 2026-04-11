@@ -12,6 +12,8 @@ const shipment = require("./router/shipments")
 const countryRouter = require("./router/Country")
 dotenv.config();
 
+// server.ts ya app.ts mein ye line honi chahiye
+
 
 const app = express();
 
@@ -26,6 +28,7 @@ app.use(
   })
 );
 
+
 // Routes
 app.use("/api/admin", authRoutes);
 app.use("/api/form", formRoutes);
@@ -38,8 +41,8 @@ app.use("/api/contry", countryRouter)
  })
 
 // ✅ Backend static uploads folder
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-
+// Pura path.join(__dirname...) hata kar ye likhein:
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 // ✅ Frontend static files
 app.use(express.static(path.join(__dirname, "../out")));
 
