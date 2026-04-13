@@ -3,19 +3,7 @@ const db = require("../config/dbconnection");
 const { Request, Response } = require("express");
 
 
-// function resolveBaseUrl(req: Request): string {
-//   const forwardedProto = (req.headers["x-forwarded-proto"] as string | undefined)
-//     ?.split(",")[0]
-//     ?.trim();
-//   const protocol = forwardedProto || req.protocol || "http";
-//   const host = req.get("host");
 
-//   if (host) {
-//     return `${protocol}://${host}`;
-//   }
-
-//   return "http://localhost:5000";
-// }
 
 async function upload(req: Request & { files?: any }, res: Response) {
   try {
@@ -89,5 +77,33 @@ const products = rows.map((product: any) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 }
+async function getProductFilters(req: Request, res: Response) {
+  try {
+    // 1. Database se unique Therapy (Wellness Area) nikalo, empty/null values ignore kardo
+    const [therapyRows] = await db.query(
+      "SELECT DISTINCT therapy FROM products WHERE therapy IS NOT NULL AND therapy != ''"
+    );
 
-module.exports = { upload, getProduct };
+    // 2. Database se unique Dosage Form (Product Form) nikalo, empty/null values ignore kardo
+    const [dosageRows] = await db.query(
+      "SELECT DISTINCT dosageForm FROM products WHERE dosageForm IS NOT NULL AND dosageForm != ''"
+    );
+
+    // Objects ke array ko simple string ke array me convert karo
+    // e.g., [{ therapy: 'Cardiac' }, ...] -> ['Cardiac', ...]
+    const therapyFilters = therapyRows.map((row: any) => row.therapy);
+    const dosageFilters = dosageRows.map((row: any) => row.dosageForm);
+
+    // 3. JSON format me return karo (Jaisa Context API me expected hai)
+    return res.status(200).json({
+      therapyFilters,
+      dosageFilters
+    });
+
+  } catch (error) {
+    console.error("Error fetching filters:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
+module.exports = { upload, getProduct, getProductFilters };
