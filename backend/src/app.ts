@@ -7,7 +7,7 @@ const authRoutes = require("./router/authrouter");
 const cookieParser = require("cookie-parser");
 const productrouter = require("./router/productRouter")
 const cors = require("cors");
-const path = require("path");  // ← add karo
+const path = require("path");
 const shipment = require("./router/shipments")
 const countryRouter = require("./router/Country")
 dotenv.config();
@@ -40,15 +40,15 @@ app.use("/api/contry", countryRouter)
     res.send("server is running 🚀 ")
  })
 
-// ✅ Backend static uploads folder
-// Pura path.join(__dirname...) hata kar ye likhein:
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+const uploadsDir = path.resolve(__dirname, "../uploads");
+app.use("/uploads", express.static(uploadsDir));
+// app.use("/upload", express.static(uploadsDir));
 // ✅ Frontend static files
-app.use(express.static(path.join(__dirname, "../out")));
+// app.use(express.static(path.join(__dirname, "../out")));
 
 // ✅ Catch-all
-app.get("/{*path}", function(req: any, res: any) {
-  res.sendFile(path.join(__dirname, "../out", "index.html"));
-});
+// app.get("/{*path}", function(req: any, res: any) {
+//   res.sendFile(path.join(__dirname, "../out", "index.html"));
+// });
 
 module.exports = app;

@@ -2,6 +2,21 @@ export {};
 const db = require("../config/dbconnection");
 const { Request, Response } = require("express");
 
+
+// function resolveBaseUrl(req: Request): string {
+//   const forwardedProto = (req.headers["x-forwarded-proto"] as string | undefined)
+//     ?.split(",")[0]
+//     ?.trim();
+//   const protocol = forwardedProto || req.protocol || "http";
+//   const host = req.get("host");
+
+//   if (host) {
+//     return `${protocol}://${host}`;
+//   }
+
+//   return "http://localhost:5000";
+// }
+
 async function upload(req: Request & { files?: any }, res: Response) {
   try {
     const { name, genericName, therapy, dosageForm, packaging, description, tag } = req.body;
@@ -25,6 +40,7 @@ async function upload(req: Request & { files?: any }, res: Response) {
 
     await db.query(query, [name, genericName, therapy, dosageForm, packaging, description, tag, imagePath, brochurePath]);
 
+    // const baseUrl = resolveBaseUrl(req);
     const baseUrl = process.env.BASE_URL || "http://localhost:5000";
     const imageUrl = `${baseUrl}${imagePath}`;
     const brochureUrl = brochurePath ? `${baseUrl}${brochurePath}` : null;
@@ -38,21 +54,34 @@ async function upload(req: Request & { files?: any }, res: Response) {
 
 async function getProduct(req: Request, res: Response) {
   try {
+    console.log("BASE_URL from ENV:", process.env.BASE_URL); // Yeh check karein
     const [rows] = await db.query("SELECT * FROM products");
     
+    // const baseUrl = resolveBaseUrl(req);
     const baseUrl = process.env.BASE_URL || "http://localhost:5000";
+
     
-    const products = rows.map((product: any) => {
-      return {
-        ...product,
-        image: product.image && !product.image.startsWith("http") 
-          ? `${baseUrl}${product.image.startsWith("/") ? "" : "/"}${product.image}` 
-          : product.image,
-        brochure: product.brochure && !product.brochure.startsWith("http") 
-          ? `${baseUrl}${product.brochure.startsWith("/") ? "" : "/"}${product.brochure}` 
-          : product.brochure
-      };
-    });
+    // const products = rows.map((product: any) => {
+    //   return {
+    //     ...product,
+    //     image: product.image && !product.image.startsWith("http") 
+    //       ? `${baseUrl}${product.image.startsWith("/") ? "" : "/"}${product.image}` 
+    //       : product.image,
+    //     brochure: product.brochure && !product.brochure.startsWith("http") 
+    //       ? `${baseUrl}${product.brochure.startsWith("/") ? "" : "/"}${product.brochure}` 
+    //       : product.brochure
+    //   };
+    // });
+
+const products = rows.map((product: any) => {
+
+
+  return {
+    ...product,
+    image: product.image ? `${baseUrl}${product.image}` : null,
+    brochure: product.brochure ? `${baseUrl}${product.brochure}` : null
+  };
+});
 
     return res.status(200).json(products);
   } catch (error) {

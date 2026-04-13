@@ -1,7 +1,7 @@
 export {};
-const express = require('express');
 const db = require('../config/dbconnection');
 const { Request, Response } = require("express");
+
 
 const getAllCountries = async (req: Request, res: Response) => {
   try {
