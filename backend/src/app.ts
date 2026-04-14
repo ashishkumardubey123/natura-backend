@@ -1,4 +1,3 @@
-"use strict";
 export {};
 const express = require("express");
 const dotenv = require("dotenv");
@@ -8,6 +7,7 @@ const cookieParser = require("cookie-parser");
 const productrouter = require("./router/productRouter")
 const cors = require("cors");
 const path = require("path");
+const morgan = require("morgan")
 const shipment = require("./router/shipments")
 const countryRouter = require("./router/Country")
 dotenv.config();
@@ -21,6 +21,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(morgan("dev"));
 
 const allowedOrigins = [
   'http://localhost:3000',
