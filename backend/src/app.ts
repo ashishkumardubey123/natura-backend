@@ -1,19 +1,18 @@
-export {};
+"use strict";
+
 const express = require("express");
 const dotenv = require("dotenv");
 const formRoutes = require("./router/formsRoute");
 const authRoutes = require("./router/authrouter");
 const cookieParser = require("cookie-parser");
-const productrouter = require("./router/productRouter")
+const productrouter = require("./router/productRouter");
 const cors = require("cors");
 const path = require("path");
-const morgan = require("morgan")
-const shipment = require("./router/shipments")
-const countryRouter = require("./router/Country")
+const morgan = require("morgan");
+const shipment = require("./router/shipments");
+const countryRouter = require("./router/Country");
+
 dotenv.config();
-
-// server.ts ya app.ts mein ye line honi chahiye
-
 
 const app = express();
 
@@ -23,6 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan("dev"));
 
+// CORS Setup
 const allowedOrigins = [
   'http://localhost:3000',
   'https://doaguru-natura.vercel.app',
@@ -30,12 +30,10 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl requests)
+  origin: function (origin: any, callback: any) {
     if (!origin) return callback(null, true);
-    
     if (allowedOrigins.indexOf(origin) === -1) {
-      var msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
       return callback(new Error(msg), false);
     }
     return callback(null, true);
@@ -44,27 +42,20 @@ app.use(cors({
   credentials: true
 }));
 
-
 // Routes
 app.use("/api/admin", authRoutes);
 app.use("/api/form", formRoutes);
 app.use("/api/product", productrouter);
 app.use("/api/shipments", shipment);
-app.use("/api/contry", countryRouter)
+app.use("/api/contry", countryRouter);
 
- app.get("/" ,(req:any,res:any)=>{
-    res.send("server is running 🚀 ")
- })
+app.get("/", (req: any, res: any) => {
+  res.send("Server is running 🚀");
+});
 
+// Static Files (NOTE: Vercel par ye problematic ho sakta hai)
 const uploadsDir = path.resolve(__dirname, "../uploads");
 app.use("/uploads", express.static(uploadsDir));
-// app.use("/upload", express.static(uploadsDir));
-// ✅ Frontend static files
-// app.use(express.static(path.join(__dirname, "../out")));
 
-// ✅ Catch-all
-// app.get("/{*path}", function(req: any, res: any) {
-//   res.sendFile(path.join(__dirname, "../out", "index.html"));
-// });
-
+// Vercel ke liye export
 module.exports = app;
