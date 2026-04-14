@@ -31,7 +31,7 @@ coverage/
 
 # Build folders
 
-dist/
+
 build/
 out/
 

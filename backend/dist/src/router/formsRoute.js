@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express = require("express");
+const { BusinessPartnership, ExportQuery, GeneralInquiry, SupplierRegistration } = require("../controller/formsController");
+const { Auth } = require("../middleware/auth");
+const { GetformsData, UpdateFormStatus } = require("../controller/getFormsData");
+const router = express.Router();
+router.post('/BusinessPartnership', BusinessPartnership);
+router.post('/ExportQuery', ExportQuery);
+router.post('/GeneralInquiry', GeneralInquiry);
+router.post('/SupplierRegistration', SupplierRegistration);
+router.get('/data', Auth, GetformsData);
+router.patch('/update-status/:id', Auth, UpdateFormStatus);
+module.exports = router;
