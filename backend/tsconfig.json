@@ -47,15 +47,14 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "rootDir": ".",
-    "outDir": "dist",
-    "strict": false,             // 👈 Sabse zaroori: Strict checking band
-    "noImplicitAny": false,      // 👈 req, res ke errors khatam
+    "rootDir": "./", 
+    "outDir": "./dist",
+    "strict": false,
+    "noImplicitAny": false,
     "esModuleInterop": true,
-    "skipLibCheck": true,        // 👈 Request/Response ke global name clash khatam
-    "moduleResolution": "node",
-    "isolatedModules": true      // 👈 Har file ko alag treat karega
+    "skipLibCheck": true,
+    "moduleResolution": "node"
   },
-  "include": ["server.ts", "src/**/*"],
-  "exclude": ["node_modules", "out", "dist"]
+  "include": ["**/*.ts"], 
+  "exclude": ["node_modules", "dist"]
 }
