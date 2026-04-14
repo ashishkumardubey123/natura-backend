@@ -1,10 +1,9 @@
 "use strict";
-export {};
 const mysql = require("mysql2/promise");
 const dotenv = require("dotenv");
 dotenv.config();
 
-const db = mysql.createPool({
+const dbconnection = mysql.createPool({
     host: process.env.MYSQLHOST, // Railway khud provide karega
     user: process.env.MYSQLUSER,
     password: process.env.MYSQLPASSWORD,
@@ -14,4 +13,4 @@ const db = mysql.createPool({
     connectionLimit: 10,
 });
 
-export default db;
+module.exports = dbconnection;

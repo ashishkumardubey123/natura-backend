@@ -11,7 +11,6 @@ dotenv.config();
 //   console.log(`app is running on ${port} `);
 // });
 
-// app.ts mein check karne ke liye
 db.getConnection()
   .then(connection => {
     console.log("MySQL Database connected successfully! ✅");
