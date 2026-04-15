@@ -2,12 +2,15 @@ export {};
 const db = require("../config/dbconnection");
 const env = require("dotenv");
 const { Request, Response } = require("express");
+const { sendAdminNotification } = require("../Services/sendingEmail");
 
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const cookie = require("cookie-parser");
 
 env.config();
+
+const otpStore = new Map();
 
 async function Register(req: Request, res: Response) {
   try {
@@ -241,10 +244,158 @@ async function UpdateAdminStatus(req, res) {
   }
 }
 
+async function ForgotPassword(req, res) {
+  try {
+    const { Email } = req.body;
+
+    if (!Email?.trim()) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    // A. Check if user exists in MySQL DB
+    const [adminRows] = await db.query("SELECT * FROM admins WHERE Email = ?", [Email]);
+    
+    if (adminRows.length === 0) {
+      return res.status(404).json({ success: false, message: "Please enter your registered email." });
+    }
+
+    const adminName = adminRows[0].Name;
+
+    // B. Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // C. Save OTP in Server Memory (Map) with 10 mins expiry
+    otpStore.set(Email, { 
+      otp: otp, 
+      expiresAt: Date.now() + 10 * 60 * 1000, // 10 mins
+      verified: false 
+    });
+
+    // D. Send Email
+    const subject = "Password Reset OTP - Natura Admin";
+    const html = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>Hello ${adminName},</h2>
+        <p>An OTP request has been received to reset the password for your Natura Admin account.</p>
+        <p>This OTP is valid for <strong>10 minutes</strong>:</p>
+        <h1 style="color: #2A5C32; letter-spacing: 2px;">${otp}</h1>
+        <p>If you did not make this request, please contact your super admin immediately.</p>
+      </div>
+    `;
+
+    // sendAdminNotification expects (emails, subject, html)
+    await sendAdminNotification(Email, subject, html);
+
+    return res.status(200).json({ 
+      success: true, 
+      message: "An OTP has been sent to your email.." 
+    });
+
+  } catch (error) {
+    console.error("Error in ForgotPassword:", error);
+    return res.status(500).json({ 
+      success: false, 
+      message: "Internal Server Error", 
+      error: error.message 
+    });
+  }
+}
+async function VerifyOTP(req, res) {
+  try {
+    const { Email, otp } = req.body;
+
+    if (!Email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required" });
+    }
+
+    // Check memory store
+    const otpData = otpStore.get(Email);
+
+    if (!otpData) {
+      return res.status(400).json({ success: false, message: "No active OTP request found. Please generate the OTP again." });
+    }
+
+    // Check Expiry
+    if (Date.now() > otpData.expiresAt) {
+      otpStore.delete(Email); 
+      return res.status(400).json({ success: false, message: "The OTP has expired. Please generate a new OTP." });
+    }
+
+    // Match OTP
+    if (otpData.otp !== otp) {
+      return res.status(400).json({ success: false, message: "Incorrect OTP." });
+    }
+
+    // Mark as verified
+    otpStore.set(Email, { ...otpData, verified: true });
+
+    return res.status(200).json({ 
+      success: true, 
+      message: "OTP Verified. You can now set a new password.." 
+    });
+
+  } catch (error) {
+    console.error("Error in VerifyOTP:", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+}
+
+async function ResetPassword(req, res) {
+  try {
+    const { Email, newPassword } = req.body;
+
+    if (!Email || !newPassword) {
+      return res.status(400).json({ message: "Email and new password are required" });
+    }
+
+    const otpData = otpStore.get(Email);
+
+    // SECURITY: Ensure OTP was verified first
+    if (!otpData || !otpData.verified) {
+      return res.status(403).json({ success: false, message: "Direct password reset is not allowed. Please verify the OTP first." });
+    }
+
+    // Expiry check
+    if (Date.now() > otpData.expiresAt) {
+      otpStore.delete(Email);
+      return res.status(400).json({ success: false, message: "Session has expired. Please try again from the beginning." });
+    }
+
+    // Hash the new password
+    const hashPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update MySQL Database
+    const [result] = await db.query(
+      "UPDATE admins SET Password = ? WHERE Email = ?",
+      [hashPassword, Email]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(400).json({ success: false, message: " Password update failed. User not found." });
+    }
+
+    // Clear memory
+    otpStore.delete(Email);
+
+    return res.status(200).json({ 
+      success: true, 
+      message: "Your password has been successfully reset. You can now log in.." 
+    });
+
+  } catch (error) {
+    console.error("Error in ResetPassword:", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+}
+
+
 module.exports = {
   Register,
   Login,
   Logout,
   GetAllAdmins,
   UpdateAdminStatus,
+  ForgotPassword,  
+  VerifyOTP,  
+  ResetPassword
 };
