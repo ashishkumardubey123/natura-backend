@@ -1,6 +1,6 @@
 export {};
 const db = require('../config/dbconnection');
-const { Request, Response } = require("express");
+import type { Request, Response } from "express";
 
 
 const getAllCountries = async (req: Request, res: Response) => {

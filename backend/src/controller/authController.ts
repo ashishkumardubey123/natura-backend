@@ -1,7 +1,7 @@
 export {};
 const db = require("../config/dbconnection");
 const env = require("dotenv");
-const { Request, Response } = require("express");
+import type { Request, Response } from "express";
 const { sendAdminNotification } = require("../Services/sendingEmail");
 
 const jwt = require("jsonwebtoken");
