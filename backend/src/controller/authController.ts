@@ -77,6 +77,8 @@ async function Register(req: Request, res: Response) {
     res.cookie("jwt_token", token, {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
+      sameSite: 'none',
+      secure: true,
     });
 
     return res.status(201).json({
@@ -150,6 +152,8 @@ async function Login(req, res) {
 
   res.cookie("jwt_token", token, {
     httpOnly: true,
+    sameSite: 'none',
+    secure: true,
   });
 
   res.status(200).json({
@@ -166,7 +170,7 @@ async function Login(req, res) {
 }
 
 async function Logout(req, res) {
-  res.clearCookie("jwt_token");
+  res.clearCookie("jwt_token", { httpOnly: true, sameSite: 'none', secure: true });
   res.status(200).json({
     message: "Admin logged out successfully",
   });
