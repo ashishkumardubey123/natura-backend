@@ -46,7 +46,7 @@ async function getProduct(req: Request, res: Response) {
     const [rows] = await db.query("SELECT * FROM products");
     
     // const baseUrl = resolveBaseUrl(req);
-    const baseUrl = process.env.BASE_URL || "http://localhost:5000" || ;
+    const baseUrl = process.env.BASE_URL || "http://localhost:5000";
 
     
     // const products = rows.map((product: any) => {
