@@ -26,6 +26,8 @@ app.use(morgan("dev"));
 const allowedOrigins = [
   'http://localhost:3000',
   'https://doaguru-natura.vercel.app',
+  'https://naturixahealth.com',        
+  'https://www.naturixahealth.com',    
   'https://jaipurdentalhospital.dentalguru.software'
 ];
 
